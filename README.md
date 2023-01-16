@@ -12,3 +12,7 @@ Set up partials for nav bar and boilerplate
 Added clientside validation with bootstrap
 
 Added serverside validation using Joi schemas
+
+Added the review model and integrated relationships between review and campgrounds
+
+Restructured code to use express routes
