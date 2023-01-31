@@ -16,3 +16,5 @@ Added serverside validation using Joi schemas
 Added the review model and integrated relationships between review and campgrounds
 
 Restructured code to use express routes
+
+Added Image Upload

@@ -1,3 +1,7 @@
+if (process.env.NODE_ENV !== "production") {
+    require("dotenv").config()
+}
+console.log(process.env.secret)
 const express = require("express");
 const path = require("path");
 const app = express();
@@ -15,10 +19,6 @@ const User = require("./models/user");
 const userRoutes = require("./routes/users")
 
 
-// const Campground = require("./models/campground");
-// const Joi = require("joi");
-// const { join } = require("path");
-// const { Router } = require("express");
 
 
 mongoose.set("strictQuery", false);
