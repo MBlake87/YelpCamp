@@ -1,7 +1,9 @@
 if (process.env.NODE_ENV !== "production") {
     require("dotenv").config()
 }
-console.log(process.env.secret)
+
+
+const helmet = require("helmet")
 const express = require("express");
 const path = require("path");
 const app = express();
@@ -17,12 +19,14 @@ const campgroundRoutes = require("./routes/campgrounds.js");
 const reviewRoutes = require("./routes/reviews.js");
 const User = require("./models/user");
 const userRoutes = require("./routes/users")
+const mongoSanitize = require("express-mongo-sanitize");
 
+const MongoStore = require("connect-mongo")
 
-
+const dbURL = process.env.DB_URL || "mongodb://127.0.0.1:27017/yelp-camp"
 
 mongoose.set("strictQuery", false);
-mongoose.connect("mongodb://127.0.0.1:27017/yelp-camp", {
+mongoose.connect(dbURL, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 
@@ -34,21 +38,95 @@ db.once("open", () => {
     console.log("connected")
 });
 
+const secret = process.env.SECRET || "thisisasecret"
+const store = MongoStore.create({
+    mongoUrl: dbURL,
+    touchAfter: 24 * 60 * 60,
+    crypto: {
+        secret: secret
+    }
+});
+
+store.on("error", function (e) {
+    console.log("Store Error", e)
+})
+
 const sessionConfig = {
-    secret: "thisisasecret",
+    store,
+    secret: secret,
+    name: "yelp",
     resave: false,
     saveUninitialized: true,
+
     cookie: {
         expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
         maxAge: 1000 * 60 * 60 * 24 * 7,
-        httpOnly: true
+        httpOnly: true,
+        // secure: true
     }
 
 }
+const scriptSrcUrls = [
+    "https://stackpath.bootstrapcdn.com/",
+    "https://api.tiles.mapbox.com/",
+    "https://api.mapbox.com/",
+    "https://kit.fontawesome.com/",
+    "https://cdnjs.cloudflare.com/",
+    "https://cdn.jsdelivr.net/",
+    "https://res.cloudinary.com/YOUR_CLOUDINARY_ACCOUNT/"
+];
+const styleSrcUrls = [
+    "https://kit-free.fontawesome.com/",
+    "https://stackpath.bootstrapcdn.com/",
+    "https://api.mapbox.com/",
+    "https://api.tiles.mapbox.com/",
+    "https://fonts.googleapis.com/",
+    "https://use.fontawesome.com/",
+    "https://cdn.jsdelivr.net/",
+    "https://res.cloudinary.com/YOUR_CLOUDINARY_ACCOUNT/"
+];
+const connectSrcUrls = [
+    "https://*.tiles.mapbox.com",
+    "https://api.mapbox.com",
+    "https://events.mapbox.com",
+    "https://res.cloudinary.com/YOUR_CLOUDINARY_ACCOUNT/"
+];
+const fontSrcUrls = ["https://res.cloudinary.com/YOUR_CLOUDINARY_ACCOUNT/"];
+
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: [],
+                connectSrc: ["'self'", ...connectSrcUrls],
+                scriptSrc: ["'unsafe-inline'", "'self'", ...scriptSrcUrls],
+                styleSrc: ["'self'", "'unsafe-inline'", ...styleSrcUrls],
+                workerSrc: ["'self'", "blob:"],
+                objectSrc: [],
+                imgSrc: [
+                    "'self'",
+                    "blob:",
+                    "data:",
+                    "https://res.cloudinary.com/dqbfvqe95/", //SHOULD MATCH YOUR CLOUDINARY ACCOUNT!
+                    "https://images.unsplash.com/"
+                ],
+                fontSrc: ["'self'", ...fontSrcUrls],
+                mediaSrc: ["https://res.cloudinary.com/dlzez5yga/"],
+                childSrc: ["blob:"]
+            }
+        },
+        crossOriginEmbedderPolicy: false
+    })
+);
+
+
 app.use(session(sessionConfig));
 app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session())
+app.use(mongoSanitize({
+    replaceWith: '_'
+}))
 
 passport.use(new localPassport(User.authenticate()))
 passport.serializeUser(User.serializeUser());
