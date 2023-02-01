@@ -19,12 +19,18 @@ const sample = array => array[Math.floor(Math.random() * array.length)];
 
 const seedDB = async () => {
     await Campground.deleteMany({});
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 400; i++) {
         const random1000 = Math.floor(Math.random() * 1000);
         const price = Math.floor(Math.random() * 20) + 10;
         const camp = new Campground({
             location: `${cities[random1000].city}, ${cities[random1000].state}`,
             author: "63c6684497c4150257ccf95d",
+            geometry: {
+                type: "Point",
+                coordinates: [
+                    cities[random1000].longitude,
+                    cities[random1000].latitude,]
+            },
             title: `${sample(descriptors)}, ${sample(places)}`,
             description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Porro deserunt corrupti at voluptatem rerum neque, voluptates consequuntur ipsam iste mollitia cum sint, placeat commodi similique illum iusto voluptas ullam obcaecati.",
             price: price,
